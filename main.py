@@ -30,6 +30,7 @@ def convert_position_to_airtable_format(position):
         'Times': position['times'],
         'Count': position['Count'],
         'Oldest': position['Oldest'],  
+        'Comments': position['Comments'],
     }
     return airtable_position
 
@@ -77,6 +78,11 @@ async def get_positions():
                 aggregated_positions[key]['Count'] += 1
             if 'Oldest' not in aggregated_positions[key] or time_str < aggregated_positions[key]['Oldest']:
                 aggregated_positions[key]['Oldest'] = time_str
+            comment_str = str(position.get('comment', 'na')) if position.get('comment') is not None else 'na'
+            if 'Comments' not in aggregated_positions[key] or not aggregated_positions[key]['Comments']:
+                aggregated_positions[key]['Comments'] = comment_str
+            else:
+                aggregated_positions[key]['Comments'] += ', ' + comment_str
 
         # Update existing records or insert new records in Airtable
         for key, position in aggregated_positions.items():
