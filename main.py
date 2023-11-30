@@ -95,6 +95,10 @@ async def get_positions():
 
     except Exception as err:
         print(api.format_error(err))
-    exit()
 
-asyncio.run(get_positions())
+async def main():
+    while True:
+        await get_positions()
+        await asyncio.sleep(120)
+
+asyncio.run(main())
