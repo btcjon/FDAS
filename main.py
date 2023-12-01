@@ -105,6 +105,6 @@ async def get_positions():
 async def main():
     while True:
         await get_positions()
-        await asyncio.sleep(120)
+        await asyncio.sleep(240)
 
 asyncio.run(main())
