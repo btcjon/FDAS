@@ -43,9 +43,8 @@ async def fetch_positions(account):
         await connection.connect()
         # wait until terminal state synchronized to the local state
         await connection.wait_synchronized()
-        # access local copy of terminal state
-        terminal_state = connection.terminal_state
-        return terminal_state.positions
+        # fetch current open positions
+        return await connection.get_positions()
     except Exception as e:
         logger.error(f"Error fetching positions: {e}")
         raise
