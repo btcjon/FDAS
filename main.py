@@ -56,7 +56,7 @@ async def fetch_positions(account):
 
         # fetch current open positions
         positions = connection.terminal_state.positions
-        logger.info(f"Fetched {len(positions)} positions")
+        logger.info(f"Fetched {len(positions)} positions from MetaApi")
         return positions
     except Exception as e:
         logger.error(f"Error fetching positions: {e}")
@@ -72,8 +72,9 @@ def store_positions(positions):
 
 def fetch_positions_from_db():
     try:
-        logger.info("Fetching positions from MongoDB...")
-        return list(positions_collection.find())
+        positions_from_db = list(positions_collection.find())
+        logger.info(f"Fetched {len(positions_from_db)} positions from MongoDB")
+        return positions_from_db
     except Exception as e:
         logger.error(f"Error fetching positions from MongoDB: {e}")
         raise
