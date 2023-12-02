@@ -30,7 +30,6 @@ positions_collection = db['positions']
 # Create MetaApi instance
 api = MetaApi(api_token)
 
-async def main():
 
 async def fetch_account(api):
     try:
