@@ -38,7 +38,14 @@ async def fetch_account(api):
 async def fetch_positions(account):
     try:
         logger.info("Fetching positions...")
-        return await account.get_positions()
+        # connect to MetaApi API
+        connection = account.get_streaming_connection()
+        await connection.connect()
+        # wait until terminal state synchronized to the local state
+        await connection.wait_synchronized()
+        # access local copy of terminal state
+        terminal_state = connection.terminal_state
+        return terminal_state.positions
     except Exception as e:
         logger.error(f"Error fetching positions: {e}")
         raise
