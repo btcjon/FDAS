@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 from pymongo import MongoClient
 import pandas as pd
 import panel as pn
+import asyncio
 import os
 
 # Set up logging
