@@ -21,13 +21,14 @@ account_id = os.getenv('META_API_ACCOUNT_ID')
 mongodb_uri = os.getenv('MONGODB_URI')
 db_name = os.getenv('DB_NAME')
 
-# Create MetaApi instance
-api = MetaApi(api_token)
-
 # Connect to MongoDB
 client = MongoClient(mongodb_uri)
 db = client[db_name]
 positions_collection = db['positions']
+
+async def main():
+    # Create MetaApi instance inside the async function
+    api = MetaApi(api_token)
 
 async def fetch_account(api):
     try:
