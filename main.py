@@ -6,6 +6,9 @@ from panel.widgets import Tabulator
 import os
 import asyncio
 import panel as pn
+import threading
+from panel.viewable import Layoutable
+from panel.widgets import IntSlider
 
 # Load environment variables
 load_dotenv()
@@ -14,85 +17,76 @@ print("Environment variables loaded.")
 # Get MetaApi token and account id
 api_token = os.getenv('META_API_TOKEN')
 account_id = os.getenv('META_API_ACCOUNT_ID')
+print("MetaApi token and account id retrieved.")
 
 # Get MongoDB URI and database name
 mongodb_uri = os.getenv('MONGODB_URI')
 db_name = os.getenv('DB_NAME')
+print("MongoDB URI and database name retrieved.")
 
-# Connect to MongoDB
+# Create a MongoDB client
 client = MongoClient(mongodb_uri)
 db = client[db_name]
-positions_collection = db['positions']
-print("Connected to MongoDB.")
+collection = db['positions']
+print("MongoDB client created.")
 
-async def fetch_account(api):
-    try:
-        return await api.metatrader_account_api.get_account(account_id)
-    except Exception as e:
-        raise
+# Create a change stream
+change_stream = collection.watch()
+print("Change stream created.")
 
-async def fetch_positions(account):
-    try:
-        # Ensure the account is deployed and connected to the broker
-        if account.state not in ['DEPLOYED', 'DEPLOYING']:
-            await account.deploy()
-        await account.wait_connected()
+# Create a Panel table
+df = pd.DataFrame(list(collection.find()))
+df['_id'] = df['_id'].astype(str)  # Convert ObjectId instances to strings
+print(df.head())  # This will print the first 5 rows of the DataFrame
+table = pn.widgets.Tabulator(df, page_size=40)
+print(table)  # This will print the representation of the Panel table
+print("Panel table created.")
 
-        # Connect to MetaApi API
-        connection = account.get_streaming_connection()
-        await connection.connect()
+# Define a function to update the table when new data arrives
+def update_table(change):
+    new_data = pd.DataFrame([change['fullDocument']])
+    new_data['_id'] = new_data['_id'].astype(str)  # Convert ObjectId instances to strings
+    print(new_data.head())  # This will print the first 5 rows of the new data
+    table.stream(new_data)
+    print("Table updated.")
 
-        # Wait until terminal state synchronized to the local state
-        await connection.wait_synchronized()
+def listen_to_changes():
+    for change in change_stream:
+        update_table(change)
 
-        # Fetch current open positions without logging each position
-        positions = connection.terminal_state.positions
-        # The detailed positions data is not logged to avoid cluttering the terminal
-        return positions
-    except Exception as e:
-        raise
-
-def store_positions(positions):
-    try {
-        positions_collection.insert_many(positions)
-    except Exception as e:
-        raise
-
-def fetch_positions_from_db():
-    try:
-        positions_from_db = list(positions_collection.find())
-        return positions_from_db
-    except Exception as e:
-        raise
-
-def create_dataframe(positions):
-    df = pd.DataFrame(positions)
-    df = df.drop(columns=['_id'])
-    return df
-
-def create_panel_table(df):
-    return Tabulator(df, pagination='remote', layout='fit_columns', frozen_rows=1, frozen_columns=1, name='Positions')
+# Start a new thread for the change stream listener
+change_stream_thread = threading.Thread(target=listen_to_changes)
+change_stream_thread.start()
 
 async def main():
-    # Create MetaApi instance
+    # Create a MetaApi instance
     api = MetaApi(api_token)
+    print("MetaApi instance created.")
 
-    account = await fetch_account(api)
-    print("Account information fetched.")
-    positions = await fetch_positions(account)
-    print(f"{len(positions)} positions fetched.")
-    store_positions(positions)
-    print(f"{positions_collection.count_documents({})} positions stored to MongoDB.")
-    positions_from_db = fetch_positions_from_db()
-    print("Positions fetched from MongoDB.")
-    df = create_dataframe(positions_from_db)
-    print("DataFrame created from positions.")
-    table = create_panel_table(df)
-    print("Panel table created from DataFrame.")
-    
-    # Serve the Panel table in the browser
+    # Fetch account and create a streaming connection
+    account = await api.metatrader_account_api.get_account(account_id)
+    connection = account.get_streaming_connection()
+    await connection.connect()
+
+    # Wait until synchronization completed
+    await connection.wait_synchronized()
+
+    # Access local copy of terminal state
+    terminalState = connection.terminal_state
+
+    # Access positions from the terminal state
+    positions = terminalState.positions
+    print("Account and positions fetched.")
+
+    # Store positions in MongoDB
+    for position in positions:
+        if not collection.find_one({'id': position['id']}):
+            collection.insert_one(position)
+    print("Positions stored in MongoDB.")
+
+    # Serve the table directly
     pn.serve(table)
+    print("Panel table served in the browser.")
 
 if __name__ == '__main__':
-    import asyncio
     asyncio.run(main())
