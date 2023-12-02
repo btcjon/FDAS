@@ -2,10 +2,10 @@ from metaapi_cloud_sdk import MetaApi
 from dotenv import load_dotenv
 from pymongo import MongoClient
 import pandas as pd
-import panel as pn
+from panel.widgets import Tabulator
 import os
 import asyncio
-
+import panel as pn
 
 # Load environment variables
 load_dotenv()
@@ -53,7 +53,7 @@ async def fetch_positions(account):
         raise
 
 def store_positions(positions):
-    try:
+    try {
         positions_collection.insert_many(positions)
     except Exception as e:
         raise
@@ -66,10 +66,12 @@ def fetch_positions_from_db():
         raise
 
 def create_dataframe(positions):
-    return pd.DataFrame(positions)
+    df = pd.DataFrame(positions)
+    df = df.drop(columns=['_id'])
+    return df
 
 def create_panel_table(df):
-    return pn.widgets.DataFrame(df, name='Positions')
+    return Tabulator(df, pagination='remote', layout='fit_columns', frozen_rows=1, frozen_columns=1, name='Positions')
 
 async def main():
     # Create MetaApi instance
@@ -87,6 +89,7 @@ async def main():
     print("DataFrame created from positions.")
     table = create_panel_table(df)
     print("Panel table created from DataFrame.")
+    
     # Serve the Panel table in the browser
     pn.serve(table)
 
