@@ -9,6 +9,7 @@ import asyncio
 
 # Load environment variables
 load_dotenv()
+print("Environment variables loaded.")
 
 # Get MetaApi token and account id
 api_token = os.getenv('META_API_TOKEN')
@@ -22,6 +23,7 @@ db_name = os.getenv('DB_NAME')
 client = MongoClient(mongodb_uri)
 db = client[db_name]
 positions_collection = db['positions']
+print("Connected to MongoDB.")
 
 async def fetch_account(api):
     try:
@@ -74,11 +76,17 @@ async def main():
     api = MetaApi(api_token)
 
     account = await fetch_account(api)
+    print("Account information fetched.")
     positions = await fetch_positions(account)
+    print("Positions fetched.")
     # store_positions(positions)
+    # print("Positions stored to MongoDB.")
     positions_from_db = fetch_positions_from_db()
+    print("Positions fetched from MongoDB.")
     df = create_dataframe(positions_from_db)
+    print("DataFrame created from positions.")
     table = create_panel_table(df)
+    print("Panel table created from DataFrame.")
     # Commented out to avoid cluttering the terminal with the table data
 
 if __name__ == '__main__':
