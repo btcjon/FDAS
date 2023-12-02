@@ -43,7 +43,7 @@ async def fetch_positions(account):
         try:
             await connection.connect()
             # Check if the connection to the broker is established
-            if not connection.connected:
+            if not connection.terminal_state.connected:
                 logger.error(f"The account {account_id} is not connected to the broker yet. Please make sure the account is connected before retrying the request.")
                 return []
             # wait until terminal state synchronized to the local state
