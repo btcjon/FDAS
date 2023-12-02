@@ -87,7 +87,8 @@ async def main():
     print("DataFrame created from positions.")
     table = create_panel_table(df)
     print("Panel table created from DataFrame.")
-    # Commented out to avoid cluttering the terminal with the table data
+    # Serve the Panel table in the browser
+    pn.serve(table)
 
 if __name__ == '__main__':
     import asyncio
