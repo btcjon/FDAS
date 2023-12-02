@@ -55,8 +55,7 @@ async def fetch_positions(account):
 
         # Fetch current open positions without logging each position
         positions = connection.terminal_state.positions
-        # Commented out to avoid cluttering the terminal
-        # logger.info(f"Fetched {len(positions)} positions from MetaApi, not displaying them to avoid clutter")
+        # The detailed positions data is not logged to avoid cluttering the terminal
         return positions
     except Exception as e:
         logger.error(f"Error fetching positions: {e}")
