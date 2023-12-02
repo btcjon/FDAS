@@ -29,13 +29,21 @@ async def test_meta_api_synchronization():
         print('Waiting for API server to connect to broker (may take couple of minutes)')
         await account.wait_connected()
 
+        # Check if the account is connected to the broker
+        if not account.connected:
+            print(f"The account {accountId} is not connected to the broker yet. Please make sure the account is connected before retrying the request.")
+            return
+        
         # connect to MetaApi API
         connection = account.get_streaming_connection()
-        await connection.connect()
-
-        # wait until terminal state synchronized to the local state
-        print('Waiting for SDK to synchronize to terminal state (may take some time depending on your history size)')
-        await connection.wait_synchronized()
+        try:
+            await connection.connect()
+            # wait until terminal state synchronized to the local state
+            print('Waiting for SDK to synchronize to terminal state (may take some time depending on your history size)')
+            await connection.wait_synchronized()
+        except Exception as err:
+            print(f"Failed to connect or synchronize: {err}")
+            return
 
         # access local copy of terminal state
         print('Testing terminal state access')
