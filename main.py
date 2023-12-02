@@ -4,8 +4,8 @@ from dotenv import load_dotenv
 from pymongo import MongoClient
 import pandas as pd
 import panel as pn
-import asyncio
 import os
+import asyncio
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -26,10 +26,6 @@ db_name = os.getenv('DB_NAME')
 client = MongoClient(mongodb_uri)
 db = client[db_name]
 positions_collection = db['positions']
-
-# Create MetaApi instance
-api = MetaApi(api_token)
-
 
 async def fetch_account(api):
     try:
@@ -72,6 +68,9 @@ def create_panel_table(df):
     return pn.widgets.DataFrame(df, name='Positions')
 
 async def main():
+    # Create MetaApi instance
+    api = MetaApi(api_token)
+
     account = await fetch_account(api)
     positions = await fetch_positions(account)
     store_positions(positions)
@@ -84,4 +83,3 @@ async def main():
 if __name__ == '__main__':
     import asyncio
     asyncio.run(main())
-
