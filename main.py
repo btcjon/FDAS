@@ -79,6 +79,7 @@ async def main():
 
     account = await fetch_account(api)
     positions = await fetch_positions(account)
+    print(f"Number of positions fetched: {len(positions)}")
     store_positions(positions)
     positions_from_db = fetch_positions_from_db()
     df = create_dataframe(positions_from_db)
