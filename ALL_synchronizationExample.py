@@ -39,14 +39,15 @@ async def test_meta_api_synchronization():
         # access local copy of terminal state
         print('Testing terminal state access')
         terminal_state = connection.terminal_state
-        print('connected:', terminal_state.connected)
-        print('connected to broker:', terminal_state.connected_to_broker)
-        print('account information:', terminal_state.account_information)
-        print('positions:', terminal_state.positions)
-        print('orders:', terminal_state.orders)
-        print('specifications:', terminal_state.specifications)
-        print('EURUSD specification:', terminal_state.specification('EURUSD'))
-        print('EURUSD price:', terminal_state.price('EURUSD'))
+        # The following print statements have been commented out to prevent data from being printed to the terminal
+        # print('connected:', terminal_state.connected)
+        # print('connected to broker:', terminal_state.connected_to_broker)
+        # print('account information:', terminal_state.account_information)
+        # print('positions:', terminal_state.positions)
+        # print('orders:', terminal_state.orders)
+        # print('specifications:', terminal_state.specifications)
+        # print('EURUSD specification:', terminal_state.specification('EURUSD'))
+        # print('EURUSD price:', terminal_state.price('EURUSD'))
 
         # access history storage
         history_storage = connection.history_storage

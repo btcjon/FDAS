@@ -38,21 +38,17 @@ async def test_meta_api_synchronization():
 
         # invoke RPC API (replace ticket numbers with actual ticket numbers which exist in your MT account)
         print('Testing MetaAPI RPC API')
-        print('account information:', await connection.get_account_information())
-        print('positions:', await connection.get_positions())
-        # print(await connection.get_position('1234567'))
-        print('open orders:', await connection.get_orders())
-        # print(await connection.get_order('1234567'))
-        print('history orders by ticket:', await connection.get_history_orders_by_ticket('1234567'))
-        print('history orders by position:', await connection.get_history_orders_by_position('1234567'))
-        print('history orders (~last 3 months):',
-              await connection.get_history_orders_by_time_range(datetime.utcnow() - timedelta(days=90),
-                                                                datetime.utcnow()))
-        print('history deals by ticket:', await connection.get_deals_by_ticket('1234567'))
-        print('history deals by position:', await connection.get_deals_by_position('1234567'))
-        print('history deals (~last 3 months):',
-              await connection.get_deals_by_time_range(datetime.utcnow() - timedelta(days=90), datetime.utcnow()))
-        print('server time', await connection.get_server_time())
+        # The following print statements have been commented out to prevent data from being printed to the terminal
+        # print('account information:', await connection.get_account_information())
+        # print('positions:', await connection.get_positions())
+        # print('open orders:', await connection.get_orders())
+        # print('history orders by ticket:', await connection.get_history_orders_by_ticket('1234567'))
+        # print('history orders by position:', await connection.get_history_orders_by_position('1234567'))
+        # print('history orders (~last 3 months):', await connection.get_history_orders_by_time_range(datetime.utcnow() - timedelta(days=90), datetime.utcnow()))
+        # print('history deals by ticket:', await connection.get_deals_by_ticket('1234567'))
+        # print('history deals by position:', await connection.get_deals_by_position('1234567'))
+        # print('history deals (~last 3 months):', await connection.get_deals_by_time_range(datetime.utcnow() - timedelta(days=90), datetime.utcnow()))
+        # print('server time', await connection.get_server_time())
 
         # calculate margin required for trade
         print('margin required for trade', await connection.calculate_margin({
