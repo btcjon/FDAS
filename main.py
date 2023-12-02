@@ -29,30 +29,56 @@ client = MongoClient(mongodb_uri)
 db = client[db_name]
 positions_collection = db['positions']
 
-# Fetch account
-logger.info("Fetching account...")
-account = await api.metatrader_account_api.get_account(account_id)
+async def fetch_account(api):
+    try:
+        logger.info("Fetching account...")
+        return await api.metatrader_account_api.get_account(account_id)
+    except Exception as e:
+        logger.error(f"Error fetching account: {e}")
+        raise
 
-# Fetch positions
-logger.info("Fetching positions...")
-positions = await account.get_positions()
+async def fetch_positions(account):
+    try:
+        logger.info("Fetching positions...")
+        return await account.get_positions()
+    except Exception as e:
+        logger.error(f"Error fetching positions: {e}")
+        raise
 
-# Store positions in MongoDB
-logger.info("Storing positions in MongoDB...")
-positions_collection.insert_many(positions)
+def store_positions(positions):
+    try:
+        logger.info("Storing positions in MongoDB...")
+        positions_collection.insert_many(positions)
+    except Exception as e:
+        logger.error(f"Error storing positions in MongoDB: {e}")
+        raise
 
-# Fetch positions from MongoDB
-logger.info("Fetching positions from MongoDB...")
-positions_from_db = list(positions_collection.find())
+def fetch_positions_from_db():
+    try:
+        logger.info("Fetching positions from MongoDB...")
+        return list(positions_collection.find())
+    except Exception as e:
+        logger.error(f"Error fetching positions from MongoDB: {e}")
+        raise
 
-# Convert positions to DataFrame
-logger.info("Converting positions to DataFrame...")
-df = pd.DataFrame(positions_from_db)
+def create_dataframe(positions):
+    logger.info("Converting positions to DataFrame...")
+    return pd.DataFrame(positions)
 
-# Create Panel table
-logger.info("Creating Panel table...")
-table = pn.widgets.DataFrame(df, name='Positions')
+def create_panel_table(df):
+    logger.info("Creating Panel table...")
+    return pn.widgets.DataFrame(df, name='Positions')
 
-# Display table
-logger.info("Displaying table...")
-table.show()
+async def main():
+    account = await fetch_account(api)
+    positions = await fetch_positions(account)
+    store_positions(positions)
+    positions_from_db = fetch_positions_from_db()
+    df = create_dataframe(positions_from_db)
+    table = create_panel_table(df)
+    logger.info("Displaying table...")
+    table.show()
+
+if __name__ == '__main__':
+    import asyncio
+    asyncio.run(main())
