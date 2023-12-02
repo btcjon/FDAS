@@ -40,18 +40,14 @@ async def fetch_positions(account):
         logger.info("Fetching positions...")
         # connect to MetaApi API
         connection = account.get_streaming_connection()
-        try:
-            await connection.connect()
-            # Check if the connection to the broker is established
-            if not connection.terminal_state.connected:
-                logger.error(f"The account {account_id} is not connected to the broker yet. Please make sure the account is connected before retrying the request.")
-                return []
-            # wait until terminal state synchronized to the local state
-            logger.info('Waiting for SDK to synchronize to terminal state (may take some time depending on your history size)')
-            await connection.wait_synchronized()
-        except Exception as err:
-            logger.error(f"Failed to connect or synchronize: {err}")
+        await connection.connect()
+        # Check if the account is connected to the broker
+        if not account.connected:
+            logger.error(f"The account {account_id} is not connected to the broker yet. Please make sure the account is connected before retrying the request.")
             return []
+        # wait until terminal state synchronized to the local state
+        logger.info('Waiting for SDK to synchronize to terminal state (may take some time depending on your history size)')
+        await connection.wait_synchronized()
 
         # fetch current open positions
         positions = connection.terminal_state.positions
