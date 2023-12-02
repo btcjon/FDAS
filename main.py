@@ -27,9 +27,10 @@ client = MongoClient(mongodb_uri)
 db = client[db_name]
 positions_collection = db['positions']
 
+# Create MetaApi instance
+api = MetaApi(api_token)
+
 async def main():
-    # Create MetaApi instance inside the async function
-    api = MetaApi(api_token)
 
 async def fetch_account(api):
     try:
