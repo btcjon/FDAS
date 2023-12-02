@@ -45,13 +45,12 @@ async def test_meta_api_synchronization():
             print(f"Failed to connect or synchronize: {err}")
             return
 
-        # The following print statements have been commented out to prevent data from being printed to the terminal
         # access local copy of terminal state
-        # print('Testing terminal state access')
+        print('Testing terminal state access')
         terminal_state = connection.terminal_state
-        # print('connected:', terminal_state.connected)
-        # print('connected to broker:', terminal_state.connected_to_broker)
-        # print('positions:', terminal_state.positions)
+        print('connected:', terminal_state.connected)
+        print('connected to broker:', terminal_state.connected_to_broker)
+        print('positions:', terminal_state.positions)
 
         # Save positions to a JSON file
         with open('get_positions_SYNC.json', 'w') as f:
