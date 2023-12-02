@@ -53,14 +53,9 @@ async def fetch_positions(account):
         logger.info('Waiting for SDK to synchronize to terminal state (may take some time depending on your history size)')
         await connection.wait_synchronized()
 
-        # Fetch current open positions
+        # Fetch current open positions and log the count only
         positions = connection.terminal_state.positions
-        logger.info(f"Fetched {len(positions)} positions from MetaApi")
-        return positions
-
-        # fetch current open positions
-        positions = connection.terminal_state.positions
-        logger.info(f"Fetched {len(positions)} positions from MetaApi")
+        logger.info(f"Fetched {len(positions)} positions from MetaApi, not displaying them to avoid clutter")
         return positions
     except Exception as e:
         logger.error(f"Error fetching positions: {e}")
@@ -104,6 +99,7 @@ async def main():
     table = create_panel_table(df)
     logger.info("Displaying table...")
     table.show()
+    logger.info("Panel table created and displayed successfully.")
 
 if __name__ == '__main__':
     import asyncio
