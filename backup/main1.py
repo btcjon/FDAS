@@ -9,7 +9,6 @@ import panel as pn
 import threading
 from panel.viewable import Layoutable
 from panel.widgets import IntSlider
-from panel.template import ReactTemplate
 
 # Load environment variables
 load_dotenv()
@@ -39,35 +38,17 @@ print("Change stream created.")
 df = pd.DataFrame(list(collection.find()))
 df['_id'] = df['_id'].astype(str)  # Convert ObjectId instances to strings
 print(df.head())  # This will print the first 5 rows of the DataFrame
-
-df = df[['symbol', 'type', 'volume', 'profit', 'swap', 'time', 'comment', 'magic']]  # Replace with your column names in the order you want
-
-positions_all = pn.widgets.Tabulator(df, page_size=40, hidden_columns=['index', '_id', 'id', 'platform', 'brokerTime', 'updateTime', 'realizedSwap', 'realizedCommission', 'reason', 'accountCurrencyExchangeRate', 'brokerComment' , 'updateSequenceNumber', 'currentTickValue', 'unrealizedSwap', 'commission', 'unrealizedComission', 'realizedProfit', 'unrealizedProfit', 'currentPrice'])
-print(positions_all)  # This will print the representation of the Panel table
+df = df[['symbol', 'type', 'volume', 'profit', 'swap', 'comment', 'time',  'magic']]  # Replace with your column names in the order you want
+table = pn.widgets.Tabulator(df, page_size=40, hidden_columns=['index', '_id', 'id', 'platform', 'brokerTime', 'updateTime', 'realizedSwap', 'realizedCommission', 'reason', 'accountCurrencyExchangeRate', 'brokerComment' , 'updateSequenceNumber', 'currentTickValue', 'unrealizedSwap', 'commission', 'unrealizedComission', 'realizedProfit', 'unrealizedProfit', 'currentPrice'])
+print(table)  # This will print the representation of the Panel table
 print("Panel table created.")
 
-# Group by 'symbol' and 'type', and aggregate the other columns
-df2 = df.groupby(['symbol', 'type']).agg({
-    'volume': 'sum',
-    'profit': 'sum',
-    'swap': 'sum',
-    'comment': lambda x: ', '.join(f"{v}-{k}" for k, v in x.value_counts().items()),
-    'time': 'min',  # Get the oldest time
-    'magic': lambda x: ', '.join(f"{v}-{k}" for k, v in x.value_counts().items())
-}).reset_index()
-
-# Create a second Panel table
-positions_summary = pn.widgets.Tabulator(df2, page_size=40, layout='fit_data_table', hidden_columns=['index'], sorters=[{
-    'column': 'volume',
-    'dir': 'desc'
-}])
-
-
+# Define a function to update the table when new data arrives
 def update_table(change):
     new_data = pd.DataFrame([change['fullDocument']])
     new_data['_id'] = new_data['_id'].astype(str)  # Convert ObjectId instances to strings
     print(new_data.head())  # This will print the first 5 rows of the new data
-    positions_all.stream(new_data)
+    table.stream(new_data)
     print("Table updated.")
 
 def listen_to_changes():
@@ -104,16 +85,10 @@ async def main():
             collection.insert_one(position)
     print("Positions stored in MongoDB.")
 
-    # Create a ReactTemplate
-    template = ReactTemplate(title='FDAS', prevent_collision=True)
-
-    # Add the tables to the template's main area
-    template.main[0:6, 0:5] = positions_summary
-    template.main[6:12, 0:5] = positions_all
-
-    # Serve the template instead of the table
-    pn.serve(template)
+    # Serve the table directly
+    pn.serve(table)
     print("Panel table served in the browser.")
 
 if __name__ == '__main__':
     asyncio.run(main())
+
