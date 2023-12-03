@@ -40,27 +40,30 @@ df = pd.DataFrame(list(collection.find()))
 df['_id'] = df['_id'].astype(str)  # Convert ObjectId instances to strings
 print(df.head())  # This will print the first 5 rows of the DataFrame
 
-df = df[['symbol', 'type', 'volume', 'profit', 'swap', 'time', 'comment', 'magic']]  # Replace with your column names in the order you want
 
-positions_all = pn.widgets.Tabulator(df, page_size=40, hidden_columns=['index', '_id', 'id', 'platform', 'brokerTime', 'updateTime', 'realizedSwap', 'realizedCommission', 'reason', 'accountCurrencyExchangeRate', 'brokerComment' , 'updateSequenceNumber', 'currentTickValue', 'unrealizedSwap', 'commission', 'unrealizedComission', 'realizedProfit', 'unrealizedProfit', 'currentPrice'])
-print(positions_all)  # This will print the representation of the Panel table
-print("Panel table created.")
-
-# Group by 'symbol' and 'type', and aggregate the other columns
-df2 = df.groupby(['symbol', 'type']).agg({
+# Group by 'symbol' and 'type', and aggregate the other columns for df1
+df1 = df.groupby(['symbol', 'type']).agg({
     'volume': 'sum',
     'profit': 'sum',
     'swap': 'sum',
-    'comment': lambda x: ', '.join(f"{v}-{k}" for k, v in x.value_counts().items()),
     'time': 'min',  # Get the oldest time
+    'comment': lambda x: ', '.join(f"{v}-{k}" for k, v in x.value_counts().items()),
     'magic': lambda x: ', '.join(f"{v}-{k}" for k, v in x.value_counts().items())
 }).reset_index()
 
-# Create a second Panel table
-positions_summary = pn.widgets.Tabulator(df2, page_size=40, layout='fit_data_table', hidden_columns=['index'], sorters=[{
+# positions_summary df1 - 1st table
+positions_summary = pn.widgets.Tabulator(df1, page_size=40, layout='fit_data_table', hidden_columns=['index'], sorters=[{
     'column': 'volume',
     'dir': 'desc'
 }])
+
+# positions_all df2 - 2nd table
+df2 = df
+positions_all = pn.widgets.Tabulator(df2, page_size=40, hidden_columns=['index', '_id', 'id', 'platform', 'brokerTime', 'updateTime', 'realizedSwap', 'realizedCommission', 'reason', 'accountCurrencyExchangeRate', 'brokerComment' , 'updateSequenceNumber', 'currentTickValue', 'unrealizedSwap', 'commission', 'unrealizedComission', 'realizedProfit', 'unrealizedProfit', 'currentPrice'])
+print(positions_all)  # This will print the representation of the Panel table
+print("Panel table created.")
+
+
 
 
 def update_table(change):
@@ -105,7 +108,13 @@ async def main():
     print("Positions stored in MongoDB.")
 
     # Create a FastGridTemplate with dark theme
-    template = FastGridTemplate(title='FDAS', theme='dark', prevent_collision=True)
+    template = FastGridTemplate(
+    title='',
+    theme='dark',
+    prevent_collision=True,
+    header_background='#000000',  # Change to your desired color
+    logo='assets/images/ttb-logo-small-200.png'  # URL or local path to your logo
+)
 
     # Add the tables to the template's main area
     template.main[0:6, 0:5] = positions_summary
