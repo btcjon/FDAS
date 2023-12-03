@@ -46,8 +46,9 @@ df1 = df.groupby(['symbol', 'type']).agg({
     'volume': 'sum',
     'profit': 'sum',
     'swap': 'sum',
+    'openPrice': lambda x: (df['openPrice'] * df['volume']).sum() / df['volume'].sum(),
     'time': 'min',  # Get the oldest time
-    'comment': lambda x: ', '.join(f"{v}-{k}" for k, v in x.value_counts().items()),
+    'comment': lambda x: ', '.join(str(v) for v in x if pd.notna(v)),
     'magic': lambda x: ', '.join(f"{v}-{k}" for k, v in x.value_counts().items())
 }).reset_index()
 
@@ -58,12 +59,27 @@ positions_summary = pn.widgets.Tabulator(df1, page_size=40, layout='fit_data_tab
 }])
 
 # positions_all df2 - 2nd table
-df2 = df
-positions_all = pn.widgets.Tabulator(df2, page_size=40, hidden_columns=['index', '_id', 'id', 'platform', 'brokerTime', 'updateTime', 'realizedSwap', 'realizedCommission', 'reason', 'accountCurrencyExchangeRate', 'brokerComment' , 'updateSequenceNumber', 'currentTickValue', 'unrealizedSwap', 'commission', 'unrealizedComission', 'realizedProfit', 'unrealizedProfit', 'currentPrice'])
+df2 = df[['symbol', 'type', 'volume', 'profit', 'swap', 'openPrice', 'time', 'comment', 'magic']]
+positions_all = pn.widgets.Tabulator(df2, page_size=40, hidden_columns=['index', '_id', 'id', 'platform', 'brokerTime', 'updateTime', 'realizedSwap', 'realizedCommission', 'reason', 'accountCurrencyExchangeRate', 'brokerComment' , 'updateSequenceNumber', 'currentTickValue', 'unrealizedSwap', 'commission', 'unrealizedCommission', 'realizedProfit', 'unrealizedProfit', 'currentPrice'])
 print(positions_all)  # This will print the representation of the Panel table
 print("Panel table created.")
 
+# Group df2 by 'symbol' and 'type'
+df2_grouped = df2.groupby(['symbol', 'type']).agg({
+    'volume': 'sum',
+    'profit': 'sum',
+    'swap': 'sum',
+    'openPrice': 'mean',  # You can change this to any function you want
+    'time': 'min',
+    'comment': lambda x: ', '.join(str(v) for v in x),
+    'magic': lambda x: ', '.join(map(str, x))
+}).reset_index()
 
+# Create a Tabulator widget for the grouped DataFrame
+positions_all_grouped = pn.widgets.Tabulator(df2_grouped, page_size=40, layout='fit_data_table')
+
+# Print the Tabulator widget
+print(positions_all_grouped)
 
 
 def update_table(change):
@@ -117,8 +133,9 @@ async def main():
 )
 
     # Add the tables to the template's main area
-    template.main[0:6, 0:5] = positions_summary
-    template.main[6:12, 0:5] = positions_all
+    template.main[0:6, 0:7] = positions_summary
+    template.main[6:12, 0:7] = positions_all
+    template.main[12:18, 0:7] = positions_all_grouped
 
     # Serve the template instead of the table
     pn.serve(template)
