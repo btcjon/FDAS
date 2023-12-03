@@ -10,6 +10,7 @@ import threading
 from panel.viewable import Layoutable
 from panel.widgets import IntSlider
 from panel.template import FastGridTemplate
+from datetime import datetime
 
 # Load environment variables
 load_dotenv()
@@ -40,44 +41,49 @@ df = pd.DataFrame(list(collection.find()))
 df['_id'] = df['_id'].astype(str)  # Convert ObjectId instances to strings
 print(df.head())  # This will print the first 5 rows of the DataFrame
 
-
 # Group by 'symbol' and 'type', and aggregate the other columns for df1
 df1 = df.groupby(['symbol', 'type']).agg({
     'volume': 'sum',
     'profit': 'sum',
     'swap': 'sum',
-    'openPrice': lambda x: (df['openPrice'] * df['volume']).sum() / df['volume'].sum(),
+    'openPrice': lambda x: (x * df.loc[x.index, 'volume']).sum() / df.loc[x.index, 'volume'].sum(),
     'time': 'min',  # Get the oldest time
-    'comment': lambda x: ', '.join(str(v) for v in x if pd.notna(v)),
-    'magic': lambda x: ', '.join(f"{v}-{k}" for k, v in x.value_counts().items())
+    'magic': lambda x: ', '.join(f"{v}-{k}" for k, v in x.value_counts().items()),
+    'comment': lambda x: ', '.join(f"{v}-{k}" for k, v in x.value_counts().items())
 }).reset_index()
+
+# Ensure 'time' is in datetime format
+df1['time'] = pd.to_datetime(df1['time'])
+
+# Calculate 'Days Old'
+df1['Days Old'] = (datetime.now() - df1['time']).dt.days
+
+# Drop the 'time' column
+df1 = df1.drop(columns=['time'])
+
+# Get the current index of 'openPrice' and add 1 to place 'Days Old' right after it
+idx = df1.columns.get_loc('openPrice') + 1
+
+# Move 'Days Old' to right after 'openPrice'
+df1.insert(idx, 'Days Old', df1.pop('Days Old'))
+
+#disables editing in all columns
+tabulator_editors = {col: None for col in df1.columns}
 
 # positions_summary df1 - 1st table
 positions_summary = pn.widgets.Tabulator(df1, page_size=40, layout='fit_data_table', hidden_columns=['index'], sorters=[{
     'column': 'volume',
     'dir': 'desc'
-}])
+}],editors=tabulator_editors)
 
 # positions_all df2 - 2nd table
 df2 = df[['symbol', 'type', 'volume', 'profit', 'swap', 'openPrice', 'time', 'comment', 'magic']]
-positions_all = pn.widgets.Tabulator(df2, page_size=40, hidden_columns=['index', '_id', 'id', 'platform', 'brokerTime', 'updateTime', 'realizedSwap', 'realizedCommission', 'reason', 'accountCurrencyExchangeRate', 'brokerComment' , 'updateSequenceNumber', 'currentTickValue', 'unrealizedSwap', 'commission', 'unrealizedCommission', 'realizedProfit', 'unrealizedProfit', 'currentPrice'])
-print(positions_all)  # This will print the representation of the Panel table
-print("Panel table created.")
-
-# Group df2 by 'symbol' and 'type'
-df2_grouped = df2.groupby(['symbol', 'type']).agg({
-    'volume': 'sum',
-    'profit': 'sum',
-    'swap': 'sum',
-    'openPrice': 'mean',  # You can change this to any function you want
-    'time': 'min',
-    'comment': lambda x: ', '.join(str(v) for v in x),
-    'magic': lambda x: ', '.join(map(str, x))
-}).reset_index()
+#positions_all = pn.widgets.Tabulator(df2, page_size=40, hidden_columns=['index', '_id', 'id', 'platform', 'brokerTime', 'updateTime', 'realizedSwap', 'realizedCommission', 'reason', 'accountCurrencyExchangeRate', 'brokerComment' , 'updateSequenceNumber', 'currentTickValue', 'unrealizedSwap', 'commission', 'unrealizedCommission', 'realizedProfit', 'unrealizedProfit', 'currentPrice'])
+#print(positions_all)  # This will print the representation of the Panel table
+#print("Panel table created.")
 
 # Create a Tabulator widget for the grouped DataFrame
-positions_all_grouped = pn.widgets.Tabulator(df2_grouped, page_size=40, layout='fit_data_table')
-
+positions_all_grouped = pn.widgets.Tabulator(df2, groupby=['symbol', 'type'])
 # Print the Tabulator widget
 print(positions_all_grouped)
 
@@ -134,8 +140,7 @@ async def main():
 
     # Add the tables to the template's main area
     template.main[0:6, 0:7] = positions_summary
-    template.main[6:12, 0:7] = positions_all
-    template.main[12:18, 0:7] = positions_all_grouped
+    template.main[6:12, 0:7] = positions_all_grouped
 
     # Serve the template instead of the table
     pn.serve(template)
