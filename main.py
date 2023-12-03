@@ -9,7 +9,7 @@ import panel as pn
 import threading
 from panel.viewable import Layoutable
 from panel.widgets import IntSlider
-from panel.template import ReactTemplate
+from panel.template import FastGridTemplate
 
 # Load environment variables
 load_dotenv()
@@ -104,8 +104,8 @@ async def main():
             collection.insert_one(position)
     print("Positions stored in MongoDB.")
 
-    # Create a ReactTemplate
-    template = ReactTemplate(title='FDAS', prevent_collision=True)
+    # Create a FastGridTemplate with dark theme
+    template = FastGridTemplate(title='FDAS', theme='dark', prevent_collision=True)
 
     # Add the tables to the template's main area
     template.main[0:6, 0:5] = positions_summary
