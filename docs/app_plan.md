@@ -4,13 +4,15 @@
 - Use MetaApi's Streaming API for real-time updates (e.g., market data, account status). See ALL_streamingApi.rst.
 
 2. Data Storage:
-- Store fetched data in MongoDB, a scalable NoSQL database ideal for JSON-like documents.
+- Store fetched data in Atlas MongoDB, a scalable NoSQL database ideal for JSON-like documents.
 
 3. Data Usage:
 - Fetch stored data from MongoDB as needed. Create views or endpoints for specific data retrieval.
 
 4. Visualization:
 - Use Panel HoloViz for interactive data visualization. It works well with PyData tools (pandas, numpy, matplotlib).
+- Panel "Template" to use?
+    - We will start with the available ReactTemplate, built on react-grid-layout.
 
 5. Implementation Steps:
 - Establish MetaApi connection and fetch initial data via RPC API.
@@ -23,13 +25,13 @@
 6. Step-by-Step Implementation:
 - For each type ('account_information', 'positions', 'orders', 'deals', 'history_orders'):
 - Fetch data locally.
-- Determine optimal fetch method.
-- Store data.
-- Decide on visualization approach.
+- Determine optimal fetch method (sync, real-time, or combination of both)
+- Store data (Atlas mongoDB)
+- Decide on visualization approach. (Panel widget)
 - Test data retrieval from store to basic visualization (panel).
 - Create and store additional calculated/manipulated data (aggregations, new fields, etc.).
 
-# positions
+# positions table
 
 1. Data Fetching: We are using MetaApi's RPC for one-time requests to fetch initial data. For real-time updates, we are using MetaApi's Streaming API. This ensures that we always have the most up-to-date data.
 

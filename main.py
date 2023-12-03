@@ -39,7 +39,7 @@ df = pd.DataFrame(list(collection.find()))
 df['_id'] = df['_id'].astype(str)  # Convert ObjectId instances to strings
 print(df.head())  # This will print the first 5 rows of the DataFrame
 df = df[['symbol', 'type', 'volume', 'profit', 'swap', 'comment', 'time',  'magic']]  # Replace with your column names in the order you want
-table = pn.widgets.Tabulator(df, page_size=40, hidden_columns=['index', '_id', 'id', 'platform', 'brokerTime', 'updateTime', 'realizedSwap', 'realizedCommission', 'reason', 'accountCurrencyExchangeRate', 'brokerComment' , 'updateSequenceNumber', 'currentTickValue', 'unrealizedSwap', 'commission', 'unrealizedComission', 'realizedProfit', 'unrealizedProfit', 'currentPrice'], groupby=['symbol', 'type'])
+table = pn.widgets.Tabulator(df, page_size=40, hidden_columns=['index', '_id', 'id', 'platform', 'brokerTime', 'updateTime', 'realizedSwap', 'realizedCommission', 'reason', 'accountCurrencyExchangeRate', 'brokerComment' , 'updateSequenceNumber', 'currentTickValue', 'unrealizedSwap', 'commission', 'unrealizedComission', 'realizedProfit', 'unrealizedProfit', 'currentPrice'])
 print(table)  # This will print the representation of the Panel table
 print("Panel table created.")
 
@@ -91,3 +91,4 @@ async def main():
 
 if __name__ == '__main__':
     asyncio.run(main())
+
