@@ -208,7 +208,7 @@ def update_table():
 # Function to serve the template with KeyboardInterrupt handling
 def serve_template():
     try:
-        pn.serve(template, show=False, start=True)
+        pn.serve(template, show=True, start=True)
     except KeyboardInterrupt:
         print("KeyboardInterrupt caught, stopping the server...")
         pn.state.curdoc().server.stop()
