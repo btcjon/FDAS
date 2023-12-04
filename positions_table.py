@@ -237,8 +237,8 @@ def update_tables():
     processed_data = process_data(new_data)
     # Update the positions_summary table
     positions_summary.value = processed_data
-    # Update the positions_all_grouped table
-    positions_all_grouped.value = processed_data
+    # Update the positions_all_grouped table with the original new data, not processed
+    positions_all_grouped.value = new_data
 
 # Schedule the update_tables function to run periodically
 pn.state.add_periodic_callback(update_tables, period=60000)  # Update every 60 seconds
