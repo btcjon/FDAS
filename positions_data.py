@@ -64,10 +64,10 @@ async def fetch_and_update():
 
 # Create a background scheduler
 scheduler = BackgroundScheduler()
-scheduler.add_job(lambda: asyncio.run(fetch_and_update()), 'interval', minutes=5)  # Adjust the interval as needed
+scheduler.add_job(lambda: asyncio.run(fetch_and_update()), 'interval', minutes=3)  # Adjust the interval as needed
 scheduler.start()
 
 if __name__ == '__main__':
     asyncio.run(fetch_and_update())
     while True:
-        time.sleep(15)  # Sleep for 1 second to prevent high CPU usage
+        time.sleep(30)  # Sleep for 1 second to prevent high CPU usage
