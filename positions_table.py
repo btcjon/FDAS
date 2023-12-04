@@ -255,5 +255,20 @@ def handle_change_stream(change):
 
 # This block is already correct and does not need to be replaced.
 
+# Function to listen to change stream
+def listen_to_change_stream():
+    # Select the collection
+    collection = db['positions']
+
+    # Open a change stream
+    with collection.watch() as stream:
+        for change in stream:
+            # Call the existing handler for each change
+            handle_change_stream(change)
+
+# Start the change stream listener in a separate thread
+change_stream_thread = threading.Thread(target=listen_to_change_stream, daemon=True)
+change_stream_thread.start()
+
 # Serve the Panel application
 pn.serve(template, show=True)
