@@ -231,9 +231,9 @@ template.main[6:12, 0:7] = positions_all_grouped
 def process_and_update_tables(new_data):
     processed_data = process_data(new_data)
     # Update the positions_summary table
-    positions_summary.value = pd.concat([positions_summary.value, processed_data]).drop_duplicates().reset_index(drop=True)
+    positions_summary.value = processed_data
     # Update the positions_all_grouped table with the original new data, not processed
-    positions_all_grouped.value = pd.concat([positions_all_grouped.value, new_data]).drop_duplicates().reset_index(drop=True)
+    positions_all_grouped.value = new_data
 
 # Define a function to handle change stream documents
 import logging
