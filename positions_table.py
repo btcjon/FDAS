@@ -8,6 +8,7 @@ import threading
 from panel.viewable import Layoutable
 from panel.widgets import IntSlider
 from panel.template import FastGridTemplate
+from panel.template import FastListTemplate
 from datetime import datetime
 from panel.widgets import Checkbox
 import time
@@ -75,7 +76,7 @@ df1['swap'] = df1['swap'].map('${:,.0f}'.format)
 tabulator_editors = {col: None for col in df1.columns}
 
 # positions_summary df1 - 1st table
-positions_summary = pn.widgets.Tabulator(df1, page_size=40, layout='fit_data_fill', hidden_columns=['index', 'magic', 'comment', 'profit', 'realizedProfit', 'unrealizedSwap', 'realizedSwap'], sorters=[{
+positions_summary = pn.widgets.Tabulator(df1, page_size=40, layout='fit_columns', hidden_columns=['index', 'magic', 'comment', 'profit', 'realizedProfit', 'unrealizedSwap', 'realizedSwap'], sorters=[{
     'column': 'volume',
     'dir': 'desc'
 }],editors=tabulator_editors, sizing_mode='stretch_both')
@@ -151,13 +152,12 @@ df2 = df[['symbol', 'type', 'volume', 'profit', 'swap', 'openPrice', 'time', 'co
 positions_all_grouped = pn.widgets.Tabulator(df2, groupby=['symbol', 'type'])
 
 # Create a FastGridTemplate with dark theme
-template = FastGridTemplate(
+template = FastListTemplate(
 title='TTB FDAS',
 theme='dark',
 theme_toggle=True,
 collapsed_sidebar=True,
 sidebar_width=200,
-prevent_collision=True,
 header_background='#000000',  # Change to your desired color
 logo='assets/images/ttb-logo-small-200.png'  # URL or local path to your logo
 )
@@ -169,8 +169,9 @@ template.sidebar.append(checkbox_profit)
 template.sidebar.append(checkbox_realizedProfit)
 template.sidebar.append(checkbox_unrealizedSwap)
 template.sidebar.append(checkbox_realizedSwap)
-template.main[0:6, 0:7] = positions_summary
-template.main[6:12, 0:7] = positions_all_grouped
+# Append the tables to the main area
+template.main.append(positions_summary)
+template.main.append(positions_all_grouped)
 
 # Create a stop event
 stop_event = threading.Event()
