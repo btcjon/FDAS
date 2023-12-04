@@ -257,16 +257,14 @@ def handle_change_stream(change):
 
 # This block is already correct and does not need to be replaced.
 
-# Function to listen to change stream
-def listen_to_change_stream():
-    # Select the collection
-    collection = db['positions']
+# Function to periodically fetch data from the database and update the tables
+def periodic_fetch_and_update():
+    df = pd.DataFrame(list(collection.find()))
+    process_and_update_tables(df)
 
-    # Open a change stream
-    with collection.watch() as stream:
-        for change in stream:
-            # Call the existing handler for each change
-            handle_change_stream(change)
+# Start the periodic data fetch and update in a separate thread
+periodic_update_thread = threading.Thread(target=lambda: pn.state.add_periodic_callback(periodic_fetch_and_update, period=60000), daemon=True)
+periodic_update_thread.start()
 
 # Function to periodically fetch data from the database and update the tables
 def periodic_fetch_and_update():
