@@ -255,22 +255,26 @@ def update_table():
             print("Waiting for the next update cycle...")
             stop_event.wait(120)
 
-# Function to serve the template
+# Function to serve the template with KeyboardInterrupt handling
 def serve_template():
-    pn.serve(template)
+    try:
+        pn.serve(template, show=False, start=True)
+    except KeyboardInterrupt:
+        print("KeyboardInterrupt caught, stopping the server...")
+        pn.state.curdoc().server.stop()
 
 # Start a new thread that runs the serve_template function
-serve_thread = threading.Thread(target=serve_template)
+serve_thread = threading.Thread(target=serve_template, daemon=True)
 serve_thread.start()
 
 try:
     # Start a new thread that runs the update_table function
-    update_thread = threading.Thread(target=update_table)
+    update_thread = threading.Thread(target=update_table, daemon=True)
     update_thread.start()
 
     # Keep the main thread running
-    while True:
-        time.sleep(1)
+    serve_thread.join()
 except KeyboardInterrupt:
-    # Stop the updates when Ctrl+C is pressed
+    print("Main thread KeyboardInterrupt caught, stopping the update thread...")
     stop_event.set()
+    update_thread.join()
