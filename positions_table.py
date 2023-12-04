@@ -234,3 +234,6 @@ try:
 except KeyboardInterrupt:
     # Stop the updates when Ctrl+C is pressed
     stop_event.set()
+    # Join the threads to ensure they have stopped before exiting
+    update_thread.join()
+    serve_thread.join()
