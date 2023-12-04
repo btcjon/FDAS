@@ -12,77 +12,25 @@ from datetime import datetime
 from panel.widgets import Checkbox
 import time
 
-# Load environment variables and check if they are set
+# Load environment variables
 load_dotenv()
+print("Environment variables loaded.")
+
+# Get MongoDB URI and database name
 mongodb_uri = os.getenv('MONGODB_URI')
 db_name = os.getenv('DB_NAME')
-if not mongodb_uri or not db_name:
-    raise EnvironmentError("MONGODB_URI and/or DB_NAME environment variables are not set.")
+print("MongoDB URI and database name retrieved.")
 
-print("Environment variables loaded and verified.")
-
-# Create a MongoDB client with exception handling
-try:
-    client = MongoClient(mongodb_uri, serverSelectionTimeoutMS=5000)
-    client.server_info()  # Force a call to check if connected
-    db = client[db_name]
-    collection = db['positions']
-    print("MongoDB client created and connected.")
-except Exception as e:
-    print(f"Error connecting to MongoDB: {e}")
-    raise
-
-# Ensure the MongoDB client is closed properly when the script ends
-import atexit
-atexit.register(client.close)
-
-def process_data(dataframe):
-    dataframe['_id'] = dataframe['_id'].astype(str)  # Convert ObjectId instances to strings
-    # Group by 'symbol' and 'type', and aggregate the other columns for df1
-    df1 = dataframe.groupby(['symbol', 'type']).agg({
-        'volume': 'sum',
-        'unrealizedProfit': 'sum',
-        'swap': 'sum',
-        'openPrice': lambda x: (x * dataframe.loc[x.index, 'volume']).sum() / dataframe.loc[x.index, 'volume'].sum(),
-        'time': 'min',  # Get the oldest time
-        'magic': lambda x: ', '.join(f"{v}-{k}" for k, v in x.value_counts().items()),
-        'comment': lambda x: ', '.join(f"{v}-{k}" for k, v in x.value_counts().items()),
-        'profit': 'sum',
-        'realizedProfit': 'sum',
-        'unrealizedSwap': 'sum',
-        'realizedSwap': 'sum',
-    }).reset_index()
-
-    # Ensure 'time' is in datetime format
-    df1['time'] = pd.to_datetime(df1['time'])
-
-    # Calculate 'Days'
-    df1['Days'] = (datetime.now() - df1['time']).dt.days
-
-    # Drop the 'time' column
-    df1 = df1.drop(columns=['time'])
-
-    # Get the current index of 'openPrice' and add 1 to place 'Days' right after it
-    idx = df1.columns.get_loc('openPrice') + 1
-
-    # Move 'Days' to right after 'openPrice'
-    df1.insert(idx, 'Days', df1.pop('Days'))
-
-    # rename columns for readability
-    df1 = df1.rename(columns={'unrealizedProfit': 'uProfit', 'openPrice': 'BE'})
-
-    # make 'type' prettier
-    df1['type'] = df1['type'].replace({'POSITION_TYPE_BUY': 'BUY', 'POSITION_TYPE_SELL': 'SELL'})
-
-    df1['uProfit'] = df1['uProfit'].map('${:,.0f}'.format)
-    df1['swap'] = df1['swap'].map('${:,.0f}'.format)
-
-    return df1
+# Create a MongoDB client
+client = MongoClient(mongodb_uri)
+db = client[db_name]
+collection = db['positions']
+print("MongoDB client created.")
 
 # Create a Panel table
 df = pd.DataFrame(list(collection.find()))
-df_processed = process_data(df)
-print(df_processed.head())  # This will print the first 5 rows of the processed DataFrame
+df['_id'] = df['_id'].astype(str)  # Convert ObjectId instances to strings
+print(df.head())  # This will print the first 5 rows of the DataFrame
 
 # Group by 'symbol' and 'type', and aggregate the other columns for df1
 df1 = df.groupby(['symbol', 'type']).agg({
@@ -224,54 +172,81 @@ template.sidebar.append(checkbox_realizedSwap)
 template.main[0:6, 0:7] = positions_summary
 template.main[6:12, 0:7] = positions_all_grouped
 
+# Create a stop event
+stop_event = threading.Event()
 
-# This block is already correct and does not need to be replaced.
+def update_table():
+    while not stop_event.is_set():
+        print("Fetching new updated data from the database...")
+        # Fetch new data from the database
+        new_df = pd.DataFrame(list(collection.find()))
+        new_df['_id'] = new_df['_id'].astype(str)
 
-# Define a function to process and update the tables with new data
-def process_and_update_tables(new_data):
-    processed_data = process_data(new_data)
-    # Update the positions_summary table
-    positions_summary.value = processed_data
-    # Update the positions_all_grouped table with the original new data, not processed
-    positions_all_grouped.value = new_data
+        # Apply the same transformations to new_df as were applied to the original DataFrame
+        new_df1 = new_df.groupby(['symbol', 'type']).agg({
+            'volume': 'sum',
+            'unrealizedProfit': 'sum',
+            'swap': 'sum',
+            'openPrice': lambda x: (x * new_df.loc[x.index, 'volume']).sum() / new_df.loc[x.index, 'volume'].sum(),
+            'time': 'min',
+            'magic': lambda x: ', '.join(f"{v}-{k}" for k, v in x.value_counts().items()),
+            'comment': lambda x: ', '.join(f"{v}-{k}" for k, v in x.value_counts().items()),
+            'profit': 'sum',
+            'realizedProfit': 'sum',
+            'unrealizedSwap': 'sum',
+            'realizedSwap': 'sum',
+        }).reset_index()
 
-# Define a function to handle change stream documents
-import logging
+        new_df1['time'] = pd.to_datetime(new_df1['time'])
+        new_df1['Days'] = (datetime.now() - new_df1['time']).dt.days
+        new_df1 = new_df1.drop(columns=['time'])
+        idx = new_df1.columns.get_loc('openPrice') + 1
+        new_df1.insert(idx, 'Days', new_df1.pop('Days'))
+        new_df1 = new_df1.rename(columns={'unrealizedProfit': 'uProfit', 'openPrice': 'BE'})
+        new_df1['type'] = new_df1['type'].replace({'POSITION_TYPE_BUY': 'BUY', 'POSITION_TYPE_SELL': 'SELL'})
+        new_df1['uProfit'] = new_df1['uProfit'].map('${:,.0f}'.format)
+        new_df1['swap'] = new_df1['swap'].map('${:,.0f}'.format)
 
-# Configure logging at the top of your script
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+        # Prepare the patch for existing rows
+        patch = {column: [(index, value)] for index, row in new_df1.iterrows() for column, value in row.items() if index in positions_summary.value.index and positions_summary.value.loc[index, column] != value}
 
-def handle_change_stream(change):
-    logging.info(f"Change detected: Operation {change['operationType']} on document {change['documentKey']['_id']}")
-    if change['operationType'] in ['insert', 'update', 'replace']:
-        new_data = change.get('fullDocument')
-        if new_data:
-            logging.info(f"Processing new data: {new_data}")
-            # Convert new_data to a DataFrame
-            new_data_df = pd.DataFrame([new_data])
-            # Process and update the tables with the new data
-            process_and_update_tables(new_data_df)
-    elif change['operationType'] == 'delete':
-        # Handle delete operation if necessary
-        pass
+        # Update the existing rows
+        if patch:
+            print(f"Updating {len(patch)} existing rows...")
+            positions_summary.patch(patch)
 
-# This block is already correct and does not need to be replaced.
+        # Add new rows
+        new_rows = new_df1.loc[~new_df1.index.isin(positions_summary.value.index)]
+        if not new_rows.empty:
+            print(f"Adding {len(new_rows)} new rows...")
+            positions_summary.stream(new_rows, rollover=len(new_rows))
 
-# Function to periodically fetch data from the database and update the tables
-def periodic_fetch_and_update():
-    try:
-        df = pd.DataFrame(list(collection.find()))
-        process_and_update_tables(df)
-    except Exception as e:
-        print(f"Error fetching data: {e}")
+        # Remove rows that no longer exist in the database
+        old_rows = positions_summary.value.loc[~positions_summary.value.index.isin(new_df1.index)]
+        if not old_rows.empty:
+            print(f"Removing {len(old_rows)} old rows...")
+            for index in old_rows.index:
+                positions_summary.remove(index)
 
-# Start the periodic data fetch and update immediately when the script is run
-def start_periodic_callback():
-    callback = pn.state.add_periodic_callback(periodic_fetch_and_update, period=60000, start=True)
-    return callback
+        # Wait for a certain period of time or until the stop event is set
+        stop_event.wait(120)
 
-# Call the function to start the periodic callback and store the callback reference
-periodic_callback = start_periodic_callback()
+# Function to serve the template
+def serve_template():
+    pn.serve(template)
 
-# Serve the Panel application
-pn.serve(template, show=True, start=False)
+# Start a new thread that runs the serve_template function
+serve_thread = threading.Thread(target=serve_template)
+serve_thread.start()
+
+try:
+    # Start a new thread that runs the update_table function
+    update_thread = threading.Thread(target=update_table)
+    update_thread.start()
+
+    # Keep the main thread running
+    while True:
+        time.sleep(1)
+except KeyboardInterrupt:
+    # Stop the updates when Ctrl+C is pressed
+    stop_event.set()
