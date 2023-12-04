@@ -186,10 +186,17 @@ stop_event = threading.Event()
 
 def update_table():
     while not stop_event.is_set():
-        print("Fetching new updated data from the database...")
-        # Fetch new data from the database
-        new_df = pd.DataFrame(list(collection.find()))
-        new_df['_id'] = new_df['_id'].astype(str)
+        try:
+            print("Fetching new updated data from the database...")
+            # Fetch new data from the database
+            new_df = pd.DataFrame(list(collection.find()))
+            new_df['_id'] = new_df['_id'].astype(str)
+            print("Data fetched successfully.")
+        except Exception as e:
+            print(f"Error fetching data from the database: {e}")
+            continue  # Skip to the next iteration of the loop
+
+        try:
 
         # Apply the same transformations to new_df as were applied to the original DataFrame
         new_df1 = new_df.groupby(['symbol', 'type']).agg({
@@ -237,8 +244,16 @@ def update_table():
             for index in old_rows.index:
                 positions_summary.remove(index)
 
-        # Wait for a certain period of time or until the stop event is set
-        stop_event.wait(120)
+            # Rest of the data processing logic...
+            # (Include the entire data processing logic here)
+
+        except Exception as e:
+            print(f"Error processing data: {e}")
+
+        finally:
+            # Wait for a certain period of time or until the stop event is set
+            print("Waiting for the next update cycle...")
+            stop_event.wait(120)
 
 # Function to serve the template
 def serve_template():
