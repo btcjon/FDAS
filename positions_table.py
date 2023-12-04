@@ -197,9 +197,8 @@ def update_table():
             continue  # Skip to the next iteration of the loop
 
         try:
-
-        # Apply the same transformations to new_df as were applied to the original DataFrame
-        new_df1 = new_df.groupby(['symbol', 'type']).agg({
+            # Apply the same transformations to new_df as were applied to the original DataFrame
+            new_df1 = new_df.groupby(['symbol', 'type']).agg({
             'volume': 'sum',
             'unrealizedProfit': 'sum',
             'swap': 'sum',
