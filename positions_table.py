@@ -184,26 +184,38 @@ template.main[6:12, 0:7] = positions_all_grouped
 # Create a stop event
 stop_event = threading.Event()
 
-def update_table():
+def fetch_and_process_new_data():
+    print("Fetching new updated data from the database...")
+    # Fetch new data from the database
+    new_df = pd.DataFrame(list(collection.find()))
+    new_df['_id'] = new_df['_id'].astype(str)
+    print("Data fetched successfully.")
+    return new_df
+
+def update_positions_summary(new_data):
+    # Process new_data as needed to match the format of positions_summary
+    # For example, aggregate new data and apply transformations
+    # ...
+    # Then update the positions_summary table
+    positions_summary.stream(new_data, follow=True)
+
+def update_positions_all_grouped(new_data):
+    # Process new_data as needed to match the format of positions_all_grouped
+    # For example, just add new rows to the table
+    # ...
+    # Then update the positions_all_grouped table
+    positions_all_grouped.stream(new_data, follow=True)
+
+def update_tables_periodically():
     while not stop_event.is_set():
-        while not stop_event.is_set():
-            try:
-                print("Fetching new updated data from the database...")
-                # Fetch new data from the database
-                new_df = pd.DataFrame(list(collection.find()))
-                new_df['_id'] = new_df['_id'].astype(str)
-                print("Data fetched successfully.")
-                
-                # Update the table with new data
-                # Your code to update the table goes here...
-                
-            except Exception as e:
-                print(f"Error fetching data from the database: {e}")
-                continue  # Skip to the next iteration of the loop
-            finally:
-                # Code that should run after try/except block goes here
-                # For example, you might want to sleep for a bit before the next iteration
-                time.sleep(120)
+        new_data = fetch_and_process_new_data()
+        update_positions_summary(new_data)
+        update_positions_all_grouped(new_data)
+        time.sleep(120)  # Sleep for 2 minutes before the next update
+
+# Start a new thread that runs the update_tables_periodically function
+update_thread = threading.Thread(target=update_tables_periodically, daemon=True)
+update_thread.start()
 
 # Function to serve the template with KeyboardInterrupt handling
 def serve_template():
