@@ -243,15 +243,17 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 
 def handle_change_stream(change):
     logging.info(f"Change detected: Operation {change['operationType']} on document {change['documentKey']['_id']}")
-    new_data = change.get('fullDocument')
-    if new_data:
-        logging.info(f"Processing new data: {new_data}")
-        # Convert new_data to a DataFrame
-        new_data_df = pd.DataFrame([new_data])
-        # Log the processed data
-        logging.info(f"Processed data: {new_data_df}")
-        # Process and update the tables with the new data
-        process_and_update_tables(new_data_df)
+    if change['operationType'] in ['insert', 'update', 'replace']:
+        new_data = change.get('fullDocument')
+        if new_data:
+            logging.info(f"Processing new data: {new_data}")
+            # Convert new_data to a DataFrame
+            new_data_df = pd.DataFrame([new_data])
+            # Process and update the tables with the new data
+            process_and_update_tables(new_data_df)
+    elif change['operationType'] == 'delete':
+        # Handle delete operation if necessary
+        pass
 
 # This block is already correct and does not need to be replaced.
 
