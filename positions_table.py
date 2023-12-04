@@ -259,15 +259,19 @@ def handle_change_stream(change):
 
 # Function to periodically fetch data from the database and update the tables
 def periodic_fetch_and_update():
-    df = pd.DataFrame(list(collection.find()))
-    process_and_update_tables(df)
+    try:
+        df = pd.DataFrame(list(collection.find()))
+        process_and_update_tables(df)
+    except Exception as e:
+        print(f"Error fetching data: {e}")
 
 # Start the periodic data fetch and update immediately when the script is run
 def start_periodic_callback():
-    pn.state.add_periodic_callback(periodic_fetch_and_update, period=60000, start=True)
+    callback = pn.state.add_periodic_callback(periodic_fetch_and_update, period=60000, start=True)
+    return callback
 
-# Call the function to start the periodic callback
-start_periodic_callback()
+# Call the function to start the periodic callback and store the callback reference
+periodic_callback = start_periodic_callback()
 
 # Serve the Panel application
 pn.serve(template, show=True, start=False)
