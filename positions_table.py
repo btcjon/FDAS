@@ -242,7 +242,7 @@ import logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 def handle_change_stream(change):
-    logging.info(f"Change detected: {change}")
+    logging.info(f"Change detected: Operation {change['operationType']} on document {change['documentKey']['_id']}")
     new_data = change.get('fullDocument')
     if new_data:
         logging.info(f"Processing new data: {new_data}")
