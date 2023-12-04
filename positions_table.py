@@ -181,62 +181,27 @@ template.sidebar.append(checkbox_realizedSwap)
 template.main[0:6, 0:7] = positions_summary
 template.main[6:12, 0:7] = positions_all_grouped
 
-# Create a stop event
-stop_event = threading.Event()
-
-def fetch_and_process_new_data():
-    print("Fetching new updated data from the database...")
+# Define a function to fetch and process new data from the database
+def fetch_and_process_data():
+    print("Fetching and processing new data from the database...")
     # Fetch new data from the database
     new_df = pd.DataFrame(list(collection.find()))
-    new_df['_id'] = new_df['_id'].astype(str)
-    print("Data fetched successfully.")
+    new_df['_id'] = new_df['_id'].astype(str)  # Convert ObjectId instances to strings
+    # Process the data as done initially
+    # ...
+    # Return the processed data
     return new_df
 
-def update_positions_summary(new_data):
-    # Process new_data as needed to match the format of positions_summary
-    # For example, aggregate new data and apply transformations
-    # ...
-    # Then update the positions_summary table
-    positions_summary.stream(new_data, follow=True)
+# Define a function to update the tables with new data
+def update_tables():
+    new_data = fetch_and_process_data()
+    # Update the positions_summary table
+    positions_summary.value = new_data
+    # Update the positions_all_grouped table
+    positions_all_grouped.value = new_data
 
-def update_positions_all_grouped(new_data):
-    # Process new_data as needed to match the format of positions_all_grouped
-    # For example, just add new rows to the table
-    # ...
-    # Then update the positions_all_grouped table
-    positions_all_grouped.stream(new_data, follow=True)
+# Schedule the update_tables function to run periodically
+pn.state.add_periodic_callback(update_tables, period=60000)  # Update every 60 seconds
 
-def update_tables_periodically():
-    while not stop_event.is_set():
-        new_data = fetch_and_process_new_data()
-        update_positions_summary(new_data)
-        update_positions_all_grouped(new_data)
-        time.sleep(120)  # Sleep for 2 minutes before the next update
-
-# Start a new thread that runs the update_tables_periodically function
-update_thread = threading.Thread(target=update_tables_periodically, daemon=True)
-update_thread.start()
-
-# Function to serve the template with KeyboardInterrupt handling
-def serve_template():
-    try:
-        pn.serve(template, show=True, start=True)
-    except KeyboardInterrupt:
-        print("KeyboardInterrupt caught, stopping the server...")
-        pn.state.curdoc().server.stop()
-
-# Start a new thread that runs the serve_template function
-serve_thread = threading.Thread(target=serve_template, daemon=True)
-serve_thread.start()
-
-try:
-    # Start a new thread that runs the update_table function
-    update_thread = threading.Thread(target=update_table, daemon=True)
-    update_thread.start()
-
-    # Keep the main thread running
-    serve_thread.join()
-except KeyboardInterrupt:
-    print("Main thread KeyboardInterrupt caught, stopping the update thread...")
-    stop_event.set()
-    update_thread.join()
+# Serve the Panel application
+pn.serve(template, show=True)
