@@ -250,10 +250,33 @@ def handle_change_stream(change):
         positions_summary.value = pd.concat([positions_summary.value, processed_data]).drop_duplicates().reset_index(drop=True)
         positions_all_grouped.value = pd.concat([positions_all_grouped.value, pd.DataFrame([new_data])]).drop_duplicates().reset_index(drop=True)
 
-# Start the change stream listener
-change_stream = collection.watch(full_document='updateLookup')
-for change in change_stream:
-    handle_change_stream(change)
+# Define a function to process and update the tables with new data
+def process_and_update_tables(new_data):
+    processed_data = process_data(new_data)
+    # Update the positions_summary table
+    positions_summary.value = pd.concat([positions_summary.value, processed_data]).drop_duplicates().reset_index(drop=True)
+    # Update the positions_all_grouped table with the original new data, not processed
+    positions_all_grouped.value = pd.concat([positions_all_grouped.value, new_data]).drop_duplicates().reset_index(drop=True)
+
+# Define a function to handle change stream documents
+def handle_change_stream(change):
+    print("Change detected:", change)
+    new_data = change.get('fullDocument')
+    if new_data:
+        # Convert new_data to a DataFrame
+        new_data_df = pd.DataFrame([new_data])
+        # Process and update the tables with the new data
+        process_and_update_tables(new_data_df)
+
+# Start the change stream listener in a separate thread
+def start_change_stream_listener():
+    change_stream = collection.watch(full_document='updateLookup')
+    for change in change_stream:
+        handle_change_stream(change)
+
+# Run the change stream listener in a separate thread
+change_stream_thread = threading.Thread(target=start_change_stream_listener, daemon=True)
+change_stream_thread.start()
 
 # Serve the Panel application
 pn.serve(template, show=True)
