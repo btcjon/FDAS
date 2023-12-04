@@ -203,7 +203,7 @@ def update_table():
             finally:
                 # Code that should run after try/except block goes here
                 # For example, you might want to sleep for a bit before the next iteration
-                time.sleep(5)
+                time.sleep(120)
 
 # Function to serve the template with KeyboardInterrupt handling
 def serve_template():
