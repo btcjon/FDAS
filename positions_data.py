@@ -43,15 +43,24 @@ async def fetch_and_update():
     terminalState = connection.terminal_state
 
     # Access positions from the terminal state
-    positions = terminalState.positions
+    fetched_positions = terminalState.positions
     print("Account and positions fetched.")
 
-    # Store positions in MongoDB
-    count = 0
-    for position in positions:
+    # Store positions in MongoDB and create a list of fetched position ids
+    fetched_position_ids = []
+    for position in fetched_positions:
         collection.update_one({'id': position['id']}, {"$set": position}, upsert=True)
-        count += 1
-    print(f"{count} positions updated or inserted in MongoDB.")
+        fetched_position_ids.append(position['id'])
+    print(f"{len(fetched_positions)} positions updated or inserted in MongoDB.")
+
+    # Fetch all positions from the database
+    db_positions = collection.find()
+
+    # Remove positions from the database that are not in the fetched positions
+    for db_position in db_positions:
+        if db_position['id'] not in fetched_position_ids:
+            collection.delete_one({'id': db_position['id']})
+    print("Positions not in the fetched data have been removed from the database.")
 
 # Create a background scheduler
 scheduler = BackgroundScheduler()
