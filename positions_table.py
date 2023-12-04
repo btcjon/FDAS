@@ -36,10 +36,53 @@ except Exception as e:
 import atexit
 atexit.register(client.close)
 
+def process_data(dataframe):
+    dataframe['_id'] = dataframe['_id'].astype(str)  # Convert ObjectId instances to strings
+    # Group by 'symbol' and 'type', and aggregate the other columns for df1
+    df1 = dataframe.groupby(['symbol', 'type']).agg({
+        'volume': 'sum',
+        'unrealizedProfit': 'sum',
+        'swap': 'sum',
+        'openPrice': lambda x: (x * dataframe.loc[x.index, 'volume']).sum() / dataframe.loc[x.index, 'volume'].sum(),
+        'time': 'min',  # Get the oldest time
+        'magic': lambda x: ', '.join(f"{v}-{k}" for k, v in x.value_counts().items()),
+        'comment': lambda x: ', '.join(f"{v}-{k}" for k, v in x.value_counts().items()),
+        'profit': 'sum',
+        'realizedProfit': 'sum',
+        'unrealizedSwap': 'sum',
+        'realizedSwap': 'sum',
+    }).reset_index()
+
+    # Ensure 'time' is in datetime format
+    df1['time'] = pd.to_datetime(df1['time'])
+
+    # Calculate 'Days'
+    df1['Days'] = (datetime.now() - df1['time']).dt.days
+
+    # Drop the 'time' column
+    df1 = df1.drop(columns=['time'])
+
+    # Get the current index of 'openPrice' and add 1 to place 'Days' right after it
+    idx = df1.columns.get_loc('openPrice') + 1
+
+    # Move 'Days' to right after 'openPrice'
+    df1.insert(idx, 'Days', df1.pop('Days'))
+
+    # rename columns for readability
+    df1 = df1.rename(columns={'unrealizedProfit': 'uProfit', 'openPrice': 'BE'})
+
+    # make 'type' prettier
+    df1['type'] = df1['type'].replace({'POSITION_TYPE_BUY': 'BUY', 'POSITION_TYPE_SELL': 'SELL'})
+
+    df1['uProfit'] = df1['uProfit'].map('${:,.0f}'.format)
+    df1['swap'] = df1['swap'].map('${:,.0f}'.format)
+
+    return df1
+
 # Create a Panel table
 df = pd.DataFrame(list(collection.find()))
-df['_id'] = df['_id'].astype(str)  # Convert ObjectId instances to strings
-print(df.head())  # This will print the first 5 rows of the DataFrame
+df_processed = process_data(df)
+print(df_processed.head())  # This will print the first 5 rows of the processed DataFrame
 
 # Group by 'symbol' and 'type', and aggregate the other columns for df1
 df1 = df.groupby(['symbol', 'type']).agg({
@@ -181,24 +224,21 @@ template.sidebar.append(checkbox_realizedSwap)
 template.main[0:6, 0:7] = positions_summary
 template.main[6:12, 0:7] = positions_all_grouped
 
-# Define a function to fetch and process new data from the database
-def fetch_and_process_data():
-    print("Fetching and processing new data from the database...")
+# Define a function to fetch new data from the database
+def fetch_new_data():
+    print("Fetching new data from the database...")
     # Fetch new data from the database
     new_df = pd.DataFrame(list(collection.find()))
-    new_df['_id'] = new_df['_id'].astype(str)  # Convert ObjectId instances to strings
-    # Process the data as done initially
-    # ...
-    # Return the processed data
     return new_df
 
-# Define a function to update the tables with new data
+# Define a function to update the tables with processed new data
 def update_tables():
-    new_data = fetch_and_process_data()
+    new_data = fetch_new_data()
+    processed_data = process_data(new_data)
     # Update the positions_summary table
-    positions_summary.value = new_data
+    positions_summary.value = processed_data
     # Update the positions_all_grouped table
-    positions_all_grouped.value = new_data
+    positions_all_grouped.value = processed_data
 
 # Schedule the update_tables function to run periodically
 pn.state.add_periodic_callback(update_tables, period=60000)  # Update every 60 seconds
