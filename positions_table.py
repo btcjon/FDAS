@@ -186,25 +186,24 @@ stop_event = threading.Event()
 
 def update_table():
     while not stop_event.is_set():
-        try:
-            print("Fetching new updated data from the database...")
-            # Fetch new data from the database
-            new_df = pd.DataFrame(list(collection.find()))
-            new_df['_id'] = new_df['_id'].astype(str)
-            print("Data fetched successfully.")
-        except Exception as e:
-            print(f"Error fetching data from the database: {e}")
-            continue  # Skip to the next iteration of the loop
-
-        # The entire try-except block should be here, including the except and finally clauses.
-        # If the original code does not have an except or finally block, you should add them.
-        # For example:
-        try:
-            # Your code here...
-        except Exception as e:
-            print(f"An error occurred: {e}")
-        finally:
-            # Your code here...
+        while not stop_event.is_set():
+            try:
+                print("Fetching new updated data from the database...")
+                # Fetch new data from the database
+                new_df = pd.DataFrame(list(collection.find()))
+                new_df['_id'] = new_df['_id'].astype(str)
+                print("Data fetched successfully.")
+                
+                # Update the table with new data
+                # Your code to update the table goes here...
+                
+            except Exception as e:
+                print(f"Error fetching data from the database: {e}")
+                continue  # Skip to the next iteration of the loop
+            finally:
+                # Code that should run after try/except block goes here
+                # For example, you might want to sleep for a bit before the next iteration
+                time.sleep(5)
 
 # Function to serve the template with KeyboardInterrupt handling
 def serve_template():
