@@ -240,8 +240,20 @@ def update_tables():
     # Update the positions_all_grouped table with the original new data, not processed
     positions_all_grouped.value = new_data
 
-# Schedule the update_tables function to run periodically
-pn.state.add_periodic_callback(update_tables, period=60000)  # Update every 60 seconds
+# Function to handle change stream documents
+def handle_change_stream(change):
+    print("Change detected:", change)
+    new_data = change.get('fullDocument')
+    if new_data:
+        # Process and update the tables with the new data
+        processed_data = process_data(pd.DataFrame([new_data]))
+        positions_summary.value = pd.concat([positions_summary.value, processed_data]).drop_duplicates().reset_index(drop=True)
+        positions_all_grouped.value = pd.concat([positions_all_grouped.value, pd.DataFrame([new_data])]).drop_duplicates().reset_index(drop=True)
+
+# Start the change stream listener
+change_stream = collection.watch(full_document='updateLookup')
+for change in change_stream:
+    handle_change_stream(change)
 
 # Serve the Panel application
 pn.serve(template, show=True)
