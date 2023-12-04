@@ -268,9 +268,14 @@ def listen_to_change_stream():
             # Call the existing handler for each change
             handle_change_stream(change)
 
-# Start the change stream listener in a separate thread
-change_stream_thread = threading.Thread(target=listen_to_change_stream, daemon=True)
-change_stream_thread.start()
+# Function to periodically fetch data from the database and update the tables
+def periodic_fetch_and_update():
+    df = pd.DataFrame(list(collection.find()))
+    process_and_update_tables(df)
+
+# Start the periodic data fetch and update in a separate thread
+periodic_update_thread = threading.Thread(target=lambda: pn.state.add_periodic_callback(periodic_fetch_and_update, period=60000), daemon=True)
+periodic_update_thread.start()
 
 # Serve the Panel application
 pn.serve(template, show=True)
