@@ -236,12 +236,20 @@ def process_and_update_tables(new_data):
     positions_all_grouped.value = pd.concat([positions_all_grouped.value, new_data]).drop_duplicates().reset_index(drop=True)
 
 # Define a function to handle change stream documents
+import logging
+
+# Configure logging at the top of your script
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
 def handle_change_stream(change):
-    print("Change detected:", change)
+    logging.info(f"Change detected: {change}")
     new_data = change.get('fullDocument')
     if new_data:
+        logging.info(f"Processing new data: {new_data}")
         # Convert new_data to a DataFrame
         new_data_df = pd.DataFrame([new_data])
+        # Log the processed data
+        logging.info(f"Processed data: {new_data_df}")
         # Process and update the tables with the new data
         process_and_update_tables(new_data_df)
 
