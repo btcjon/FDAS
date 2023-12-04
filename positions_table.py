@@ -262,9 +262,11 @@ def periodic_fetch_and_update():
     df = pd.DataFrame(list(collection.find()))
     process_and_update_tables(df)
 
-# Start the periodic data fetch and update in a separate thread
-periodic_update_thread = threading.Thread(target=lambda: pn.state.add_periodic_callback(periodic_fetch_and_update, period=60000), daemon=True)
-periodic_update_thread.start()
+# Start the periodic data fetch and update using pn.state.on_load
+def start_periodic_callback():
+    pn.state.add_periodic_callback(periodic_fetch_and_update, period=60000)
+
+pn.state.on_load(start_periodic_callback)
 
 # Serve the Panel application
 pn.serve(template, show=True)
