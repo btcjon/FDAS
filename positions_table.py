@@ -196,63 +196,15 @@ def update_table():
             print(f"Error fetching data from the database: {e}")
             continue  # Skip to the next iteration of the loop
 
+        # The entire try-except block should be here, including the except and finally clauses.
+        # If the original code does not have an except or finally block, you should add them.
+        # For example:
         try:
-            # Apply the same transformations to new_df as were applied to the original DataFrame
-            new_df1 = new_df.groupby(['symbol', 'type']).agg({
-            'volume': 'sum',
-            'unrealizedProfit': 'sum',
-            'swap': 'sum',
-            'openPrice': lambda x: (x * new_df.loc[x.index, 'volume']).sum() / new_df.loc[x.index, 'volume'].sum(),
-            'time': 'min',
-            'magic': lambda x: ', '.join(f"{v}-{k}" for k, v in x.value_counts().items()),
-            'comment': lambda x: ', '.join(f"{v}-{k}" for k, v in x.value_counts().items()),
-            'profit': 'sum',
-            'realizedProfit': 'sum',
-            'unrealizedSwap': 'sum',
-            'realizedSwap': 'sum',
-        }).reset_index()
-
-        new_df1['time'] = pd.to_datetime(new_df1['time'])
-        new_df1['Days'] = (datetime.now() - new_df1['time']).dt.days
-        new_df1 = new_df1.drop(columns=['time'])
-        idx = new_df1.columns.get_loc('openPrice') + 1
-        new_df1.insert(idx, 'Days', new_df1.pop('Days'))
-        new_df1 = new_df1.rename(columns={'unrealizedProfit': 'uProfit', 'openPrice': 'BE'})
-        new_df1['type'] = new_df1['type'].replace({'POSITION_TYPE_BUY': 'BUY', 'POSITION_TYPE_SELL': 'SELL'})
-        new_df1['uProfit'] = new_df1['uProfit'].map('${:,.0f}'.format)
-        new_df1['swap'] = new_df1['swap'].map('${:,.0f}'.format)
-
-        # Prepare the patch for existing rows
-        patch = {column: [(index, value)] for index, row in new_df1.iterrows() for column, value in row.items() if index in positions_summary.value.index and positions_summary.value.loc[index, column] != value}
-
-        # Update the existing rows
-        if patch:
-            print(f"Updating {len(patch)} existing rows...")
-            positions_summary.patch(patch)
-
-        # Add new rows
-        new_rows = new_df1.loc[~new_df1.index.isin(positions_summary.value.index)]
-        if not new_rows.empty:
-            print(f"Adding {len(new_rows)} new rows...")
-            positions_summary.stream(new_rows, rollover=len(new_rows))
-
-        # Remove rows that no longer exist in the database
-        old_rows = positions_summary.value.loc[~positions_summary.value.index.isin(new_df1.index)]
-        if not old_rows.empty:
-            print(f"Removing {len(old_rows)} old rows...")
-            for index in old_rows.index:
-                positions_summary.remove(index)
-
-            # Rest of the data processing logic...
-            # (Include the entire data processing logic here)
-
+            # Your code here...
         except Exception as e:
-            print(f"Error processing data: {e}")
-
+            print(f"An error occurred: {e}")
         finally:
-            # Wait for a certain period of time or until the stop event is set
-            print("Waiting for the next update cycle...")
-            stop_event.wait(120)
+            # Your code here...
 
 # Function to serve the template with KeyboardInterrupt handling
 def serve_template():
