@@ -12,20 +12,29 @@ from datetime import datetime
 from panel.widgets import Checkbox
 import time
 
-# Load environment variables
+# Load environment variables and check if they are set
 load_dotenv()
-print("Environment variables loaded.")
-
-# Get MongoDB URI and database name
 mongodb_uri = os.getenv('MONGODB_URI')
 db_name = os.getenv('DB_NAME')
-print("MongoDB URI and database name retrieved.")
+if not mongodb_uri or not db_name:
+    raise EnvironmentError("MONGODB_URI and/or DB_NAME environment variables are not set.")
 
-# Create a MongoDB client
-client = MongoClient(mongodb_uri)
-db = client[db_name]
-collection = db['positions']
-print("MongoDB client created.")
+print("Environment variables loaded and verified.")
+
+# Create a MongoDB client with exception handling
+try:
+    client = MongoClient(mongodb_uri, serverSelectionTimeoutMS=5000)
+    client.server_info()  # Force a call to check if connected
+    db = client[db_name]
+    collection = db['positions']
+    print("MongoDB client created and connected.")
+except Exception as e:
+    print(f"Error connecting to MongoDB: {e}")
+    raise
+
+# Ensure the MongoDB client is closed properly when the script ends
+import atexit
+atexit.register(client.close)
 
 # Create a Panel table
 df = pd.DataFrame(list(collection.find()))
