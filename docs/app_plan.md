@@ -1,3 +1,5 @@
+## Overview of systems
+
 1. Data Fetching:
 - Use MetaApi's RPC for one-time requests (e.g., account info, positions, orders). See ALL_rpcExample.py.
 - Use MetaApi's Synchronization API for real-time state synchronization. See ALL_synchronizationExample.py.
@@ -9,40 +11,45 @@
 3. Data Usage:
 - Fetch stored data from MongoDB as needed. Create views or endpoints for specific data retrieval.
 
+## Determine fetch method combination for each 'type'
+
+    - type = ('account_information', 'positions', 'orders', 'deals', 'history_orders')
+    - get the data to Atlas mongo with a sync method. (prevent storing dups)
+    - additionally 'listen' for data changes real-time and note how often the data changes to make a determination on whether a basic sync on an interval will be sufficient or if we need to implement a more complex data store method.
+
 4. Visualization:
-- Use Panel HoloViz for interactive data visualization. It works well with PyData tools (pandas, numpy, matplotlib).
-- Panel "Template" to use?
-    - We will start with the available ReactTemplate, built on react-grid-layout.
+- For each 'type', Use Panel HoloViz for interactive data visualization. It works well with PyData tools (pandas, numpy, matplotlib).
 
-5. Implementation Steps:
-- Establish MetaApi connection and fetch initial data via RPC API.
-- Set up Synchronization API for state updates.
-- Store fetched data in MongoDB.
-- Set up Streaming API for real-time updates and store these in MongoDB.
-- Build a Panel HoloViz app and fetch data from MongoDB for visualization.
-- Update visualizations in real-time with data from the Streaming API.
 
-6. Step-by-Step Implementation:
-- For each type ('account_information', 'positions', 'orders', 'deals', 'history_orders'):
-- Fetch data locally.
-- Determine optimal fetch method (sync, real-time, or combination of both)
-- Store data (Atlas mongoDB)
-- Decide on visualization approach. (Panel widget)
-- Test data retrieval from store to basic visualization (panel).
-- Create and store additional calculated/manipulated data (aggregations, new fields, etc.).
+## 'positions' main.py
 
-# positions table
+- The script starts by importing necessary libraries and modules for data manipulation, web server, and interaction with MetaApi and MongoDB.
 
-1. Data Fetching: We are using MetaApi's RPC for one-time requests to fetch initial data. For real-time updates, we are using MetaApi's Streaming API. This ensures that we always have the most up-to-date data.
+- It loads environment variables from a .env file, which include MetaApi token, account id, MongoDB URI, and database name.
 
-2. Data Storage: We are storing the fetched data in MongoDB. This allows us to keep a historical record of the data, which is necessary for comparing metrics over time.
+- It establishes a connection to MongoDB using the provided URI and database name, and creates a change stream to monitor changes in the 'positions' collection.
 
-3. Data Usage: We are fetching the stored data from MongoDB as needed. This includes both the current data and historical data for comparison.
+- It fetches all documents from the 'positions' collection in MongoDB and converts them into a pandas DataFrame.
 
-4. Real-Time Updates: We are using MongoDB's change streams feature to get real-time updates when the data changes. We are also using the stream method of the Panel Tabulator widget to update the front-end table in real-time.
+- The DataFrame is then grouped by 'symbol' and 'type' columns, and other columns are aggregated accordingly. The 'time' column is converted to datetime format, and a new column 'Days Old' is calculated.
 
-5. Data Visualization: We are using Panel HoloViz for interactive data visualization. This allows us to present the data in a user-friendly way and update the visualizations in real-time.
+- Two Panel tables are created from the processed DataFrame: positions_summary and positions_all_grouped.
 
-6. Comparison Metrics: We are calculating certain metrics, such as the profit difference since yesterday or last week, based on the historical data stored in MongoDB. These metrics are updated each time new data is fetched.
+- A function update_table is defined to update the positions_all table with new data from the change stream.
 
-This approach ensures that we always have the most up-to-date data, both for the current state and for historical comparisons. It also allows us to present the data in a user-friendly way and update the visualizations in real-time.
+- A new thread is started to listen to changes in the 'positions' collection in MongoDB and update the table accordingly.
+
+- The script then creates a MetaApi instance, fetches the account and creates a streaming connection. It waits until synchronization is completed and fetches positions from the terminal state.
+
+- The fetched positions are stored in MongoDB if they don't exist already.
+
+- A FastGridTemplate is created with a dark theme, and the two Panel tables are added to the template's main area.
+
+- Finally, the template is served in the browser using Panel's serve function. If the script is run as a standalone program, it will execute the main function asynchronously.
+
+** What is missing is 'updates' to the positions data is NOT being handled.
+- we need a plan for fetching updates on a regular interval that "updates" the mongodb and then updates the data in the tables
+- we dont want to render new tables each time there is an update, we want to use the 'stream' and 'patch' features of tabulator to avoid total rebuilding of tables.
+
+
+    
